@@ -1,0 +1,27 @@
+project_id = "mzwrasiyigxsbyomdazk"
+
+# Analytics (logflare) is disabled for local dev. On local setups it is heavy
+# and frequently reports "unhealthy", which cascades to vector/storage/realtime.
+# Disabling it keeps the local stack lean (db, auth, rest, realtime, storage,
+# studio all work without it).
+[analytics]
+enabled = false
+
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.public-sitemap]
+    verify_jwt = false
+
+[auth]
+# Website visitors use an anonymous session (isolated client) for live support
+# chat, so RLS can scope each conversation to its visitor.
+enable_anonymous_sign_ins = true
+
+[functions.support-ai-auto]
+# This worker validates its dedicated secret, not a browser JWT.
+verify_jwt = false
+
+[functions.mobile-api]
+# Public login/refresh routes and authenticated routes validate credentials here.
+verify_jwt = false

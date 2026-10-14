@@ -1,0 +1,10 @@
+name = "serve-restaurant-platform"
+compatibility_date = "2026-05-03"
+
+# Cloudflare Pages output directory
+pages_build_output_dir = "./dist"
+
+# Workers Assets (used when deploying via `wrangler deploy`)
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"

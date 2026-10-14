@@ -1,0 +1,1 @@
+UPDATE public.subdomain_pool SET status='assigned', assigned_restaurant_id='4dbc7983-9d23-4de4-90b9-ad442227ee67', assigned_at=now() WHERE subdomain='res3455' AND status='available';

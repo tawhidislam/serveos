@@ -1,0 +1,1 @@
+ALTER TABLE public.menu_items ADD COLUMN prep_time_minutes integer DEFAULT null;

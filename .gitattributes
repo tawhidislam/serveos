@@ -1,0 +1,10 @@
+# Keep generated media and documents as binary Git objects.
+*.pdf binary
+*.pptx binary
+*.mp4 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.woff binary
+*.woff2 binary

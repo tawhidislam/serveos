@@ -1,0 +1,3 @@
+CREATE POLICY "Owner can upload website images" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'website-images' AND public.has_role(auth.uid(), 'owner'::app_role));
+CREATE POLICY "Owner can update website images" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'website-images' AND public.has_role(auth.uid(), 'owner'::app_role));
+CREATE POLICY "Owner can delete website images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'website-images' AND public.has_role(auth.uid(), 'owner'::app_role));

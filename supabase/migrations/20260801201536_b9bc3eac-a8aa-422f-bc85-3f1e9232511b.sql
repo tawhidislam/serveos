@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.receive_stock_batch(uuid, uuid, text, text, date, text, jsonb) FROM anon, public;
+GRANT EXECUTE ON FUNCTION public.receive_stock_batch(uuid, uuid, text, text, date, text, jsonb) TO authenticated;

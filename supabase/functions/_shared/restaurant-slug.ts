@@ -1,0 +1,18 @@
+export const RESERVED_SLUGS = new Set<string>([
+  'www', 'app', 'api', 'admin', 'staff', 'platform', 'system', 'root',
+  'auth', 'login', 'logout', 'signup', 'signin', 'register', 'oauth', 'sso',
+  'dashboard', 'settings', 'account', 'accounts', 'billing', 'payments', 'payment',
+  'mail', 'email', 'smtp', 'imap', 'pop', 'pop3', 'mx', 'ns', 'ns1', 'ns2',
+  'ftp', 'sftp', 'ssh', 'vpn',
+  'marketing', 'blog', 'news', 'docs', 'doc', 'help', 'support', 'kb', 'faq',
+  'about', 'contact', 'terms', 'privacy', 'legal', 'pricing',
+  'status', 'health', 'metrics', 'monitor', 'logs',
+  'cdn', 'assets', 'static', 'media', 'img', 'images', 'files', 'storage', 'uploads',
+  'test', 'staging', 'preview', 'dev', 'beta', 'alpha', 'sandbox',
+  'public', 'private', 'internal',
+  'store', 'stores', 'shop', 'shops', 'order', 'orders', 'menu', 'menus',
+  'qr', 'kitchen', 'waiter', 'server', 'pos', 'kds',
+  'reservation', 'reservations', 'booking', 'bookings',
+  'customer', 'customers', 'user', 'users', 'owner', 'owners',
+  'analytics', 'reports',
+]);

@@ -1,0 +1,2 @@
+ALTER TABLE public.mobile_payment_settings DROP CONSTRAINT IF EXISTS mobile_payment_provider_chk;
+ALTER TABLE public.mobile_payment_settings ADD CONSTRAINT mobile_payment_provider_chk CHECK (provider ~ '^[a-z0-9_]{2,32}$');

@@ -1,0 +1,38 @@
+BEGIN;
+DO $$
+DECLARE c uuid; admin_uid uuid; requester uuid; job public.support_ai_jobs; status jsonb;
+BEGIN
+  SELECT u.id INTO admin_uid FROM auth.users u JOIN public.platform_admins a ON a.email=u.email LIMIT 1;
+  SELECT id INTO requester FROM auth.users WHERE id<>admin_uid LIMIT 1;
+  IF admin_uid IS NULL OR requester IS NULL THEN RAISE EXCEPTION 'Local admin and requester fixtures required'; END IF;
+  INSERT INTO public.support_conversations(requester_kind,requester_user_id,status,channel,ai_enabled) VALUES('visitor',requester,'open','chat',false) RETURNING id INTO c;
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',admin_uid)::text,true);
+  PERFORM public.support_set_agent_typing(c,true);
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',requester)::text,true);
+  status:=public.support_typing_status(c); IF NOT (status->>'agent')::boolean THEN RAISE EXCEPTION 'Human typing missing'; END IF;
+  BEGIN PERFORM public.support_set_agent_typing(c,true); RAISE EXCEPTION 'Requester spoofed human typing'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='Requester spoofed human typing' THEN RAISE; END IF; END;
+  UPDATE public.support_agent_typing SET expires_at=now()-interval '1 second' WHERE conversation_id=c;
+  IF (public.support_typing_status(c)->>'agent')::boolean THEN RAISE EXCEPTION 'Expired typing still visible'; END IF;
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',admin_uid)::text,true);
+  PERFORM public.support_set_agent_typing(c,true);
+  INSERT INTO public.support_messages(conversation_id,sender_kind,sender_user_id,body) VALUES(c,'agent',admin_uid,'Test human reply');
+  IF (public.support_typing_status(c)->>'agent')::boolean THEN RAISE EXCEPTION 'Typing did not stop after reply'; END IF;
+  PERFORM public.support_set_agent_typing(c,true);
+  PERFORM public.support_set_agent_typing(c,false);
+  IF (public.support_typing_status(c)->>'agent')::boolean THEN RAISE EXCEPTION 'Explicit typing stop failed'; END IF;
+  PERFORM set_config('request.jwt.claims','',true);
+  UPDATE public.support_settings SET auto_reply_enabled=true WHERE id=true;
+  UPDATE public.support_conversations SET ai_enabled=true,status='bot' WHERE id=c;
+  INSERT INTO public.support_messages(conversation_id,sender_kind,body) VALUES(c,'requester','Transactional AI typing test');
+  SELECT * INTO job FROM public.support_ai_claim_job() WHERE conversation_id=c;
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',requester)::text,true);
+  IF NOT (public.support_typing_status(c)->>'ai')::boolean THEN RAISE EXCEPTION 'AI typing missing while generating'; END IF;
+  PERFORM set_config('request.jwt.claims','',true);
+  PERFORM public.support_ai_finish_job(job.id,job.lease_token,'Test AI response',false,NULL);
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',requester)::text,true);
+  IF (public.support_typing_status(c)->>'ai')::boolean THEN RAISE EXCEPTION 'AI typing did not stop'; END IF;
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',gen_random_uuid())::text,true);
+  BEGIN PERFORM public.support_typing_status(c); RAISE EXCEPTION 'Cross-conversation typing leaked'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='Cross-conversation typing leaked' THEN RAISE; END IF; END;
+END;
+$$;
+ROLLBACK;

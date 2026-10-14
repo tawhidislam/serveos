@@ -1,0 +1,3657 @@
+{
+  "info": {
+    "name": "ServeOS Restaurant Mobile API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:54321/functions/v1/mobile-api/v1"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "since",
+      "value": "2026-10-14T00:00:00Z"
+    },
+    {
+      "key": "idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "restaurant_id",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "branch_id",
+      "value": ""
+    },
+    {
+      "key": "category_id",
+      "value": ""
+    },
+    {
+      "key": "menu_item_id",
+      "value": ""
+    },
+    {
+      "key": "table_id",
+      "value": ""
+    },
+    {
+      "key": "addon_id",
+      "value": ""
+    },
+    {
+      "key": "item_id",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "receipt_id",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "API health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/health",
+        "auth": {
+          "type": "noauth"
+        }
+      }
+    },
+    {
+      "name": "Sign in to a restaurant staff account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) { const d=pm.response.json().data; pm.collectionVariables.set('access_token',d.access_token); pm.collectionVariables.set('refresh_token',d.refresh_token); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rotate an expired access token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/refresh",
+        "auth": {
+          "type": "noauth"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) { const d=pm.response.json().data; pm.collectionVariables.set('access_token',d.access_token); pm.collectionVariables.set('refresh_token',d.refresh_token); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Revoke the current refresh session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/logout",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Change your password with current-password verification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/auth/password",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"current_password\": \"example\",\n  \"new_password\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Your account and profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me"
+      }
+    },
+    {
+      "name": "Update your display name",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/me",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"display_name\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Accessible restaurants with roles, branches and entitlements",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants"
+      }
+    },
+    {
+      "name": "Restaurant context",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}"
+      }
+    },
+    {
+      "name": "Allowed resources and actions for the signed-in role",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/capabilities"
+      }
+    },
+    {
+      "name": "Update restaurant branding",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branding",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"tagline\": \"example\",\n  \"phone\": \"example\",\n  \"address\": \"example\",\n  \"cuisine_type\": \"example\",\n  \"logo_url\": \"example\",\n  \"primary_color\": \"example\",\n  \"accent_color\": \"example\",\n  \"theme_id\": \"{{theme_id}}\",\n  \"theme_overrides\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read branches. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branches"
+      }
+    },
+    {
+      "name": "Create branches. Roles: owner, admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branches",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"address\": \"example\",\n  \"phone\": \"example\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one branches record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branches/{{id}}"
+      }
+    },
+    {
+      "name": "Update branches",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branches/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"address\": \"example\",\n  \"phone\": \"example\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete branches",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/branches/{{id}}"
+      }
+    },
+    {
+      "name": "Read categories. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/categories"
+      }
+    },
+    {
+      "name": "Create categories. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/categories",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"sort_order\": 1,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one categories record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/categories/{{id}}"
+      }
+    },
+    {
+      "name": "Update categories",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/categories/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"sort_order\": 1,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete categories",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/categories/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-items. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-items"
+      }
+    },
+    {
+      "name": "Create menu-items. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"price\": 1,\n  \"is_available\": true,\n  \"image_url\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"sort_order\": 1,\n  \"prep_time_minutes\": 1,\n  \"custom_slug\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-items record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-items/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-items",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-items/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"price\": 1,\n  \"is_available\": true,\n  \"image_url\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"sort_order\": 1,\n  \"prep_time_minutes\": 1,\n  \"custom_slug\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-items",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-items/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-addons. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addons"
+      }
+    },
+    {
+      "name": "Create menu-addons. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addons",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"name\": \"example\",\n  \"type\": \"example\",\n  \"required\": true,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-addons record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addons/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-addons",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addons/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"name\": \"example\",\n  \"type\": \"example\",\n  \"required\": true,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-addons",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addons/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-addon-options. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addon-options"
+      }
+    },
+    {
+      "name": "Create menu-addon-options. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addon-options",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"addon_id\": \"{{addon_id}}\",\n  \"name\": \"example\",\n  \"price_modifier\": 1,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-addon-options record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addon-options/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-addon-options",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addon-options/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"addon_id\": \"{{addon_id}}\",\n  \"name\": \"example\",\n  \"price_modifier\": 1,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-addon-options",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-addon-options/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-images. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-images"
+      }
+    },
+    {
+      "name": "Create menu-images. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-images",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"image_url\": \"example\",\n  \"caption\": \"example\",\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-images record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-images/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-images",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-images/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"image_url\": \"example\",\n  \"caption\": \"example\",\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-images",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-images/{{id}}"
+      }
+    },
+    {
+      "name": "Read customization-tags. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customization-tags"
+      }
+    },
+    {
+      "name": "Create customization-tags. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customization-tags",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"category\": \"example\",\n  \"emoji\": \"example\",\n  \"color\": \"example\",\n  \"is_active\": true,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one customization-tags record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customization-tags/{{id}}"
+      }
+    },
+    {
+      "name": "Update customization-tags",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customization-tags/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"category\": \"example\",\n  \"emoji\": \"example\",\n  \"color\": \"example\",\n  \"is_active\": true,\n  \"sort_order\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete customization-tags",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customization-tags/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-tags. Roles: owner, admin, manager, waiter, server, kitchen",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-tags"
+      }
+    },
+    {
+      "name": "Create menu-tags. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-tags",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"tag_id\": \"{{tag_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-tags record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-tags/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-tags",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-tags/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"tag_id\": \"{{tag_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-tags",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-tags/{{id}}"
+      }
+    },
+    {
+      "name": "Read tables. Roles: owner, admin, manager, waiter, server, kitchen; requires operations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables"
+      }
+    },
+    {
+      "name": "Create tables. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"example\",\n  \"capacity\": 1,\n  \"status\": \"example\",\n  \"qr_code_url\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"floor_plan_id\": \"{{floor_plan_id}}\",\n  \"position_x\": 1,\n  \"position_y\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one tables record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables/{{id}}"
+      }
+    },
+    {
+      "name": "Update tables",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"example\",\n  \"capacity\": 1,\n  \"status\": \"example\",\n  \"qr_code_url\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"floor_plan_id\": \"{{floor_plan_id}}\",\n  \"position_x\": 1,\n  \"position_y\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete tables",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables/{{id}}"
+      }
+    },
+    {
+      "name": "Read floor-plans. Roles: owner, admin, manager, waiter, server; requires floorPlans",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/floor-plans"
+      }
+    },
+    {
+      "name": "Create floor-plans. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/floor-plans",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"image_url\": \"example\",\n  \"sort_order\": 1,\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one floor-plans record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/floor-plans/{{id}}"
+      }
+    },
+    {
+      "name": "Update floor-plans",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/floor-plans/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"image_url\": \"example\",\n  \"sort_order\": 1,\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete floor-plans",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/floor-plans/{{id}}"
+      }
+    },
+    {
+      "name": "Read reservations. Roles: owner, admin, manager, waiter, server; requires operations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reservations"
+      }
+    },
+    {
+      "name": "Create reservations. Roles: owner, admin, manager, waiter, server",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reservations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_name\": \"example\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"example\",\n  \"reservation_date\": \"example\",\n  \"reservation_time\": \"example\",\n  \"party_size\": 1,\n  \"notes\": \"example\",\n  \"status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one reservations record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reservations/{{id}}"
+      }
+    },
+    {
+      "name": "Update reservations",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reservations/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"guest_name\": \"example\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"example\",\n  \"reservation_date\": \"example\",\n  \"reservation_time\": \"example\",\n  \"party_size\": 1,\n  \"notes\": \"example\",\n  \"status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete reservations",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reservations/{{id}}"
+      }
+    },
+    {
+      "name": "Read promotions. Roles: owner, admin, manager; requires promotions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/promotions"
+      }
+    },
+    {
+      "name": "Create promotions. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/promotions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"type\": \"example\",\n  \"discount_value\": 1,\n  \"promo_code\": \"example\",\n  \"min_order_amount\": 1,\n  \"max_discount_amount\": 1,\n  \"max_uses\": 1,\n  \"max_uses_per_user\": 1,\n  \"applies_to\": \"example\",\n  \"applies_to_ids\": [],\n  \"happy_hour_start\": \"example\",\n  \"happy_hour_end\": \"example\",\n  \"happy_hour_days\": [],\n  \"is_first_order_only\": true,\n  \"is_active\": true,\n  \"starts_at\": \"example\",\n  \"ends_at\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one promotions record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/promotions/{{id}}"
+      }
+    },
+    {
+      "name": "Update promotions",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/promotions/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"type\": \"example\",\n  \"discount_value\": 1,\n  \"promo_code\": \"example\",\n  \"min_order_amount\": 1,\n  \"max_discount_amount\": 1,\n  \"max_uses\": 1,\n  \"max_uses_per_user\": 1,\n  \"applies_to\": \"example\",\n  \"applies_to_ids\": [],\n  \"happy_hour_start\": \"example\",\n  \"happy_hour_end\": \"example\",\n  \"happy_hour_days\": [],\n  \"is_first_order_only\": true,\n  \"is_active\": true,\n  \"starts_at\": \"example\",\n  \"ends_at\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete promotions",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/promotions/{{id}}"
+      }
+    },
+    {
+      "name": "Read customers. Roles: owner, admin, manager; requires loyalty",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customers"
+      }
+    },
+    {
+      "name": "Read one customers record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customers/{{id}}"
+      }
+    },
+    {
+      "name": "Read loyalty-settings. Roles: owner, admin, manager; requires loyalty",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/loyalty-settings"
+      }
+    },
+    {
+      "name": "Create loyalty-settings. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/loyalty-settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_enabled\": true,\n  \"earn_type\": \"example\",\n  \"points_per_order\": 1,\n  \"points_per_currency\": 1,\n  \"redemption_type\": \"example\",\n  \"point_value\": 1,\n  \"min_redeem_points\": 1,\n  \"redemption_tiers\": [],\n  \"expiry_enabled\": true,\n  \"expiry_days\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update loyalty-settings",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/loyalty-settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_enabled\": true,\n  \"earn_type\": \"example\",\n  \"points_per_order\": 1,\n  \"points_per_currency\": 1,\n  \"redemption_type\": \"example\",\n  \"point_value\": 1,\n  \"min_redeem_points\": 1,\n  \"redemption_tiers\": [],\n  \"expiry_enabled\": true,\n  \"expiry_days\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read loyalty-transactions. Roles: owner, admin, manager; requires loyalty",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/loyalty-transactions"
+      }
+    },
+    {
+      "name": "Read one loyalty-transactions record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/loyalty-transactions/{{id}}"
+      }
+    },
+    {
+      "name": "Read expense-categories. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expense-categories"
+      }
+    },
+    {
+      "name": "Create expense-categories. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expense-categories",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"icon\": \"example\",\n  \"color\": \"example\",\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one expense-categories record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expense-categories/{{id}}"
+      }
+    },
+    {
+      "name": "Update expense-categories",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expense-categories/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"description\": \"example\",\n  \"icon\": \"example\",\n  \"color\": \"example\",\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete expense-categories",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expense-categories/{{id}}"
+      }
+    },
+    {
+      "name": "Read expenses. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expenses"
+      }
+    },
+    {
+      "name": "Create expenses. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expenses",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"amount\": 1,\n  \"description\": \"example\",\n  \"vendor\": \"example\",\n  \"reference_number\": \"example\",\n  \"expense_date\": \"example\",\n  \"payment_method\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"receipt_url\": \"example\",\n  \"is_recurring\": true,\n  \"recurring_interval\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one expenses record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expenses/{{id}}"
+      }
+    },
+    {
+      "name": "Update expenses",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expenses/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"amount\": 1,\n  \"description\": \"example\",\n  \"vendor\": \"example\",\n  \"reference_number\": \"example\",\n  \"expense_date\": \"example\",\n  \"payment_method\": \"example\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"receipt_url\": \"example\",\n  \"is_recurring\": true,\n  \"recurring_interval\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete expenses",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/expenses/{{id}}"
+      }
+    },
+    {
+      "name": "Read budget-alerts. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/budget-alerts"
+      }
+    },
+    {
+      "name": "Create budget-alerts. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/budget-alerts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"monthly_budget\": \"example\",\n  \"alert_threshold_pct\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one budget-alerts record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/budget-alerts/{{id}}"
+      }
+    },
+    {
+      "name": "Update budget-alerts",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/budget-alerts/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"monthly_budget\": \"example\",\n  \"alert_threshold_pct\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete budget-alerts",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/budget-alerts/{{id}}"
+      }
+    },
+    {
+      "name": "Read inventory. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory"
+      }
+    },
+    {
+      "name": "Create inventory. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"category\": \"example\",\n  \"unit\": \"example\",\n  \"min_stock\": 1,\n  \"cost_per_unit\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one inventory record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory/{{id}}"
+      }
+    },
+    {
+      "name": "Update inventory",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"category\": \"example\",\n  \"unit\": \"example\",\n  \"min_stock\": 1,\n  \"cost_per_unit\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete inventory",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory/{{id}}"
+      }
+    },
+    {
+      "name": "Read inventory-transactions. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory-transactions"
+      }
+    },
+    {
+      "name": "Read one inventory-transactions record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory-transactions/{{id}}"
+      }
+    },
+    {
+      "name": "Read inventory-adjustments. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory-adjustments"
+      }
+    },
+    {
+      "name": "Read one inventory-adjustments record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory-adjustments/{{id}}"
+      }
+    },
+    {
+      "name": "Read menu-ingredients. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-ingredients"
+      }
+    },
+    {
+      "name": "Create menu-ingredients. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-ingredients",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"quantity_per_unit\": 1,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one menu-ingredients record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-ingredients/{{id}}"
+      }
+    },
+    {
+      "name": "Update menu-ingredients",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-ingredients/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"menu_item_id\": \"{{menu_item_id}}\",\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"quantity_per_unit\": 1,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete menu-ingredients",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/menu-ingredients/{{id}}"
+      }
+    },
+    {
+      "name": "Read suppliers. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/suppliers"
+      }
+    },
+    {
+      "name": "Create suppliers. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/suppliers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"contact_name\": \"example\",\n  \"phone\": \"example\",\n  \"email\": \"{{email}}\",\n  \"notes\": \"example\",\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one suppliers record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/suppliers/{{id}}"
+      }
+    },
+    {
+      "name": "Update suppliers",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/suppliers/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"example\",\n  \"contact_name\": \"example\",\n  \"phone\": \"example\",\n  \"email\": \"{{email}}\",\n  \"notes\": \"example\",\n  \"is_active\": true,\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete suppliers",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/suppliers/{{id}}"
+      }
+    },
+    {
+      "name": "Read stock-receipts. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/stock-receipts"
+      }
+    },
+    {
+      "name": "Read one stock-receipts record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/stock-receipts/{{id}}"
+      }
+    },
+    {
+      "name": "Read stock-receipt-lines. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/stock-receipt-lines"
+      }
+    },
+    {
+      "name": "Read one stock-receipt-lines record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/stock-receipt-lines/{{id}}"
+      }
+    },
+    {
+      "name": "Read shifts. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/shifts"
+      }
+    },
+    {
+      "name": "Create shifts. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/shifts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"shift_date\": \"example\",\n  \"start_time\": \"example\",\n  \"end_time\": \"example\",\n  \"hours_worked\": 1,\n  \"hourly_rate\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"notes\": \"example\",\n  \"status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one shifts record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/shifts/{{id}}"
+      }
+    },
+    {
+      "name": "Update shifts",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/shifts/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"shift_date\": \"example\",\n  \"start_time\": \"example\",\n  \"end_time\": \"example\",\n  \"hours_worked\": 1,\n  \"hourly_rate\": 1,\n  \"branch_id\": \"{{branch_id}}\",\n  \"notes\": \"example\",\n  \"status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete shifts",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/shifts/{{id}}"
+      }
+    },
+    {
+      "name": "Read tips. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tips"
+      }
+    },
+    {
+      "name": "Create tips. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tips",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"tip_date\": \"example\",\n  \"amount\": 1,\n  \"source\": \"example\",\n  \"order_id\": \"{{order_id}}\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"notes\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one tips record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tips/{{id}}"
+      }
+    },
+    {
+      "name": "Update tips",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tips/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"tip_date\": \"example\",\n  \"amount\": 1,\n  \"source\": \"example\",\n  \"order_id\": \"{{order_id}}\",\n  \"branch_id\": \"{{branch_id}}\",\n  \"notes\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete tips",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tips/{{id}}"
+      }
+    },
+    {
+      "name": "Read payroll. Roles: owner, admin, manager; requires accounting",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payroll"
+      }
+    },
+    {
+      "name": "Create payroll. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payroll",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"period_start\": \"example\",\n  \"period_end\": \"example\",\n  \"base_pay\": 1,\n  \"tips_total\": 1,\n  \"bonuses\": 1,\n  \"deductions\": 1,\n  \"status\": \"example\",\n  \"notes\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one payroll record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payroll/{{id}}"
+      }
+    },
+    {
+      "name": "Update payroll",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payroll/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"period_start\": \"example\",\n  \"period_end\": \"example\",\n  \"base_pay\": 1,\n  \"tips_total\": 1,\n  \"bonuses\": 1,\n  \"deductions\": 1,\n  \"status\": \"example\",\n  \"notes\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete payroll",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payroll/{{id}}"
+      }
+    },
+    {
+      "name": "Read cash-drawers. Roles: owner, admin, manager; requires operations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cash-drawers"
+      }
+    },
+    {
+      "name": "Create cash-drawers. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cash-drawers",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"opening_balance\": 1,\n  \"closing_balance\": 1,\n  \"cash_in\": 1,\n  \"cash_out\": 1,\n  \"notes\": \"example\",\n  \"status\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one cash-drawers record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cash-drawers/{{id}}"
+      }
+    },
+    {
+      "name": "Update cash-drawers",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cash-drawers/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"opening_balance\": 1,\n  \"closing_balance\": 1,\n  \"cash_in\": 1,\n  \"cash_out\": 1,\n  \"notes\": \"example\",\n  \"status\": \"example\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete cash-drawers",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cash-drawers/{{id}}"
+      }
+    },
+    {
+      "name": "Read settings. Roles: owner, admin, manager",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/settings"
+      }
+    },
+    {
+      "name": "Create settings. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"restaurant_name\": \"example\",\n  \"logo_url\": \"example\",\n  \"tax_percentage\": 1,\n  \"currency\": \"example\",\n  \"qr_ordering_enabled\": true,\n  \"primary_color\": \"example\",\n  \"accent_color\": \"example\",\n  \"tagline\": \"example\",\n  \"qr_template\": \"example\",\n  \"qr_color_overrides\": {},\n  \"homepage_template\": \"example\",\n  \"delivery_enabled\": true,\n  \"pickup_enabled\": true,\n  \"delivery_fee\": \"example\",\n  \"free_delivery_min\": \"example\",\n  \"delivery_min_order\": \"example\",\n  \"delivery_eta_minutes\": 1,\n  \"pickup_eta_minutes\": 1,\n  \"delivery_area_note\": \"example\",\n  \"contact_phone\": \"example\",\n  \"address\": \"example\",\n  \"order_page_template\": \"example\",\n  \"order_page_logo_url\": \"example\",\n  \"order_page_primary_color\": \"example\",\n  \"order_page_header_text\": \"example\",\n  \"order_page_subtext\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update settings",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/settings",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"restaurant_name\": \"example\",\n  \"logo_url\": \"example\",\n  \"tax_percentage\": 1,\n  \"currency\": \"example\",\n  \"qr_ordering_enabled\": true,\n  \"primary_color\": \"example\",\n  \"accent_color\": \"example\",\n  \"tagline\": \"example\",\n  \"qr_template\": \"example\",\n  \"qr_color_overrides\": {},\n  \"homepage_template\": \"example\",\n  \"delivery_enabled\": true,\n  \"pickup_enabled\": true,\n  \"delivery_fee\": \"example\",\n  \"free_delivery_min\": \"example\",\n  \"delivery_min_order\": \"example\",\n  \"delivery_eta_minutes\": 1,\n  \"pickup_eta_minutes\": 1,\n  \"delivery_area_note\": \"example\",\n  \"contact_phone\": \"example\",\n  \"address\": \"example\",\n  \"order_page_template\": \"example\",\n  \"order_page_logo_url\": \"example\",\n  \"order_page_primary_color\": \"example\",\n  \"order_page_header_text\": \"example\",\n  \"order_page_subtext\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read homepage. Roles: owner, admin, manager",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/homepage"
+      }
+    },
+    {
+      "name": "Create homepage. Roles: owner, admin, manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/homepage",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"section_key\": \"example\",\n  \"content\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one homepage record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/homepage/{{id}}"
+      }
+    },
+    {
+      "name": "Update homepage",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/homepage/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"section_key\": \"example\",\n  \"content\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete homepage",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/homepage/{{id}}"
+      }
+    },
+    {
+      "name": "Read custom-domains. Roles: owner, admin, manager; requires customDomain",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains"
+      }
+    },
+    {
+      "name": "Create custom-domains. Roles: owner",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"domain\": \"example\",\n  \"label\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one custom-domains record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains/{{id}}"
+      }
+    },
+    {
+      "name": "Update custom-domains",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"domain\": \"example\",\n  \"label\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete custom-domains",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains/{{id}}"
+      }
+    },
+    {
+      "name": "Read domain-requests. Roles: owner, admin, manager; requires customDomain",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/domain-requests"
+      }
+    },
+    {
+      "name": "Create domain-requests. Roles: owner",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/domain-requests",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"requested_domain\": \"example\",\n  \"message\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one domain-requests record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/domain-requests/{{id}}"
+      }
+    },
+    {
+      "name": "Update domain-requests",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/domain-requests/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"requested_domain\": \"example\",\n  \"message\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete domain-requests",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/domain-requests/{{id}}"
+      }
+    },
+    {
+      "name": "Read staff-branches. Roles: owner, admin, manager",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff-branches"
+      }
+    },
+    {
+      "name": "Create staff-branches. Roles: owner, admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff-branches",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one staff-branches record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff-branches/{{id}}"
+      }
+    },
+    {
+      "name": "Update staff-branches",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff-branches/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"branch_id\": \"{{branch_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete staff-branches",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff-branches/{{id}}"
+      }
+    },
+    {
+      "name": "Read qr-short-links. Roles: owner, admin, manager; requires operations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-short-links"
+      }
+    },
+    {
+      "name": "Create qr-short-links. Roles: owner, admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-short-links",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"example\",\n  \"table_id\": \"{{table_id}}\",\n  \"label\": \"example\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read one qr-short-links record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-short-links/{{id}}"
+      }
+    },
+    {
+      "name": "Update qr-short-links",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-short-links/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"code\": \"example\",\n  \"table_id\": \"{{table_id}}\",\n  \"label\": \"example\",\n  \"is_active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete qr-short-links",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-short-links/{{id}}"
+      }
+    },
+    {
+      "name": "Read qr-scans. Roles: owner, admin, manager; requires operations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-scans"
+      }
+    },
+    {
+      "name": "Read one qr-scans record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/qr-scans/{{id}}"
+      }
+    },
+    {
+      "name": "Read cta-clicks. Roles: owner, admin, manager",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cta-clicks"
+      }
+    },
+    {
+      "name": "Read one cta-clicks record",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/cta-clicks/{{id}}"
+      }
+    },
+    {
+      "name": "Totals and daily sales; branch-scoped, UTC report periods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/dashboard"
+      }
+    },
+    {
+      "name": "Totals and daily sales; branch-scoped, UTC report periods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reports"
+      }
+    },
+    {
+      "name": "Tenant/branch-scoped accounting audit history including deleted records",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/audit"
+      }
+    },
+    {
+      "name": "Poll order changes using a stable timestamp/id cursor",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/events?since={{since}}"
+      }
+    },
+    {
+      "name": "List restaurant staff (owner/admin only)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff"
+      }
+    },
+    {
+      "name": "Create a tenant-scoped staff account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"display_name\": \"example\",\n  \"role\": \"admin\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Change a staff role (owner/admin only)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"admin\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Remove staff membership; retain historical records",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/staff/{{id}}"
+      }
+    },
+    {
+      "name": "List orders",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders"
+      }
+    },
+    {
+      "name": "Create an atomic, server-priced order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{idempotency_key}}"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"branch_id\": \"{{branch_id}}\",\n  \"table_id\": \"{{table_id}}\",\n  \"order_type\": \"dine_in\",\n  \"customer_name\": \"example\",\n  \"customer_phone\": \"example\",\n  \"delivery_address\": \"example\",\n  \"delivery_instructions\": \"example\",\n  \"notes\": \"example\",\n  \"items\": [\n    {\n      \"menu_item_id\": \"{{menu_item_id}}\",\n      \"quantity\": 1,\n      \"notes\": \"example\",\n      \"selected_tags\": [],\n      \"addon_option_ids\": []\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Active kitchen queue (financial/customer contact fields omitted for kitchen staff)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/kitchen"
+      }
+    },
+    {
+      "name": "Order detail with items and table",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}"
+      }
+    },
+    {
+      "name": "Atomically edit a ticket with an expected-updated-at conflict check",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"expected_updated_at\": \"2026-10-14T00:00:00Z\",\n  \"notes\": \"example\",\n  \"items\": [\n    {\n      \"id\": \"example\",\n      \"quantity\": 1,\n      \"notes\": \"example\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Structured restaurant receipt (owner/admin/manager/waiter/server)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}/receipt"
+      }
+    },
+    {
+      "name": "CSV report summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/reports/export"
+      }
+    },
+    {
+      "name": "Guest table QR URL",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables/{{id}}/qr"
+      }
+    },
+    {
+      "name": "Set table status (administrator/waiter)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/tables/{{id}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"available\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Transition an order with an expected-status conflict check",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"confirmed\",\n  \"expected_status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Record payment once (owner/admin/manager)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}/payment",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payment_method\": \"cash\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Apply an authorized discount before payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}/discount",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"discount_amount\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Move an order to another table in the same branch",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/orders/{{id}}/table",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table_id\": \"{{table_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Prepare/ready/serve an individual item",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/order-items/{{id}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"preparing\",\n  \"expected_status\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read waiter calls",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/waiter-calls"
+      }
+    },
+    {
+      "name": "Resolve a waiter call",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/waiter-calls/{{id}}/resolve",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read subscription",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/subscription"
+      }
+    },
+    {
+      "name": "Read packages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/packages"
+      }
+    },
+    {
+      "name": "Read addon-catalog",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/addon-catalog"
+      }
+    },
+    {
+      "name": "Read themes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/themes"
+      }
+    },
+    {
+      "name": "Read payment-methods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/payment-methods"
+      }
+    },
+    {
+      "name": "Read subscription-payments",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/subscription-payments"
+      }
+    },
+    {
+      "name": "Submit a server-priced package payment for platform review",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/subscription-payments",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plan\": \"example\",\n  \"currency\": \"example\",\n  \"payment_method\": \"example\",\n  \"sender_number\": \"example\",\n  \"transaction_id\": \"{{transaction_id}}\",\n  \"reference_code\": \"example\",\n  \"notes\": \"example\",\n  \"coupon_code\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read addon-requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/addon-requests"
+      }
+    },
+    {
+      "name": "Request an add-on at its catalog price",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/addon-requests",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"addon_id\": \"{{addon_id}}\",\n  \"quantity\": 1,\n  \"payment_method\": \"example\",\n  \"payment_reference\": \"example\",\n  \"sender_number\": \"example\",\n  \"transaction_id\": \"{{transaction_id}}\",\n  \"reference_code\": \"example\",\n  \"notes\": \"example\",\n  \"coupon_code\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Read active-addons",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/active-addons"
+      }
+    },
+    {
+      "name": "Atomically receive inventory and record a receipt",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory/receive",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"branch_id\": \"{{branch_id}}\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"supplier_name\": \"example\",\n  \"reference\": \"example\",\n  \"received_date\": \"2026-10-14\",\n  \"notes\": \"example\",\n  \"lines\": [\n    {\n      \"item_id\": \"{{item_id}}\",\n      \"quantity\": 1,\n      \"unit_cost\": 1,\n      \"expiry_date\": \"2026-10-14\",\n      \"batch_code\": \"example\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Atomically adjust inventory and preserve adjustment history",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/inventory/adjust",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"branch_id\": \"{{branch_id}}\",\n  \"reason\": \"waste\",\n  \"notes\": \"example\",\n  \"reference\": \"example\",\n  \"lines\": [\n    {\n      \"item_id\": \"{{item_id}}\",\n      \"quantity_after\": 1,\n      \"unit_cost\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Record an authorized loyalty points adjustment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/customers/{{id}}/loyalty",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"points\": 1,\n  \"description\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Verify a domain using the existing DNS/hostname lifecycle",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/custom-domains/{{id}}/verify",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Your or owner/admin restaurant-shared support conversations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support"
+      }
+    },
+    {
+      "name": "Start a platform support conversation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"body\": \"example\",\n  \"category\": \"sales\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Customer-visible thread messages (private notes excluded)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support/{{id}}/messages"
+      }
+    },
+    {
+      "name": "Send a customer support message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support/{{id}}/messages",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"body\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "AI and human support typing status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support/{{id}}/typing"
+      }
+    },
+    {
+      "name": "Rate a resolved support conversation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/support/{{id}}/rating",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rating\": \"good\",\n  \"comment\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Upload a PNG/JPEG/WebP image, maximum 5 MB via multipart",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/restaurants/{{restaurant_id}}/uploads",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"kind\": \"menu\",\n  \"content_type\": \"example\",\n  \"base64\": \"example\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
