@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import InvoiceReceipt, { type InvoiceData } from '@/components/InvoiceReceipt';
+import { readPaymentAllocations } from '@/lib/pos-checkout';
 
 /* ── types ─────────────────────────────────────────── */
 type OrderRow = {
@@ -35,6 +36,7 @@ type OrderRow = {
   created_at: string;
   updated_at: string;
   payment_method: string | null;
+  payment_splits?: unknown;
   paid_at: string | null;
   tax_rate: number;
   discount_amount: number;
@@ -46,6 +48,7 @@ type OrderItemRow = {
   order_id: string;
   menu_item_id: string;
   quantity: number;
+  unit_price: number | null;
   notes: string | null;
   status: string;
   menu_items: { name: string; price: number } | null;
@@ -103,7 +106,7 @@ export default function BillingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [qc]);
 
-  const { data: billItems = [] } = useQuery({
+  const { data: billItems = [], isPending: billItemsPending, isError: billItemsError } = useQuery({
     queryKey: ['bill_items', billOrder?.id],
     enabled: !!billOrder,
     queryFn: async () => {
@@ -124,16 +127,8 @@ export default function BillingPage() {
     }: {
       orderId: string; payment: PaymentMethod; tax: number; discount: number;
     }) => {
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: 'completed',
-          payment_method: payment,
-          paid_at: new Date().toISOString(),
-          tax_rate: tax,
-          discount_amount: discount,
-        })
-        .eq('id', orderId);
+      if (!restaurantId) throw new Error('Restaurant is not loaded.');
+      const { error } = await supabase.rpc('pos_settle_order', { _restaurant: restaurantId, _order: orderId, _payment: payment, _tax_rate: tax, _discount: discount });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -182,8 +177,9 @@ export default function BillingPage() {
     const paid = filtered.filter(o => !!o.paid_at);
     const breakdown = { cash: 0, card: 0, mobile: 0 } as Record<string, number>;
     for (const o of paid) {
-      const method = o.payment_method || 'cash';
-      breakdown[method] = (breakdown[method] ?? 0) + o.total_amount;
+      const allocations = readPaymentAllocations(o.payment_splits);
+      if (allocations.length) for (const allocation of allocations) breakdown[allocation.method] = (breakdown[allocation.method] ?? 0) + allocation.amount;
+      else { const method = o.payment_method || 'cash'; breakdown[method] = (breakdown[method] ?? 0) + o.total_amount; }
     }
     const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
     return { breakdown, total };
@@ -214,7 +210,7 @@ export default function BillingPage() {
 
   /* ── bill calculations ── */
   const subtotal = useMemo(
-    () => billItems.reduce((s, i) => s + (i.menu_items?.price ?? 0) * i.quantity, 0),
+    () => billItems.reduce((s, i) => s + (i.unit_price ?? i.menu_items?.price ?? 0) * i.quantity, 0),
     [billItems],
   );
   const taxAmount = subtotal * (taxRate / 100);
@@ -222,7 +218,7 @@ export default function BillingPage() {
 
   const openBill = (order: OrderRow) => {
     setBillOrder(order);
-    setTaxRate(order.tax_rate || 10);
+    setTaxRate(order.tax_rate ?? 0);
     setDiscountAmount(order.discount_amount || 0);
     setSelectedPayment((order.payment_method as PaymentMethod) || 'cash');
   };
@@ -489,7 +485,7 @@ export default function BillingPage() {
                                   .eq('order_id', order.id)
                                   .then(({ data: items }) => {
                                     const orderItems = (items ?? []) as any[];
-                                    const sub = orderItems.reduce((s: number, i: any) => s + (i.menu_items?.price ?? 0) * i.quantity, 0);
+                                    const sub = orderItems.reduce((s: number, i: any) => s + (i.unit_price ?? i.menu_items?.price ?? 0) * i.quantity, 0);
                                     const tax = order.tax_rate || 0;
                                     const taxAmt = sub * (tax / 100);
                                     const disc = order.discount_amount || 0;
@@ -499,10 +495,11 @@ export default function BillingPage() {
                                       createdAt: order.created_at,
                                       paidAt: order.paid_at,
                                       paymentMethod: order.payment_method,
+                                      paymentSplits: readPaymentAllocations(order.payment_splits),
                                       items: orderItems.map((i: any) => ({
                                         name: i.menu_items?.name ?? 'Unknown',
                                         quantity: i.quantity,
-                                        unitPrice: i.menu_items?.price ?? 0,
+                                        unitPrice: i.unit_price ?? i.menu_items?.price ?? 0,
                                         notes: i.notes,
                                       })),
                                       subtotal: sub,
@@ -565,7 +562,7 @@ export default function BillingPage() {
                   {item.notes && <p className="text-xs text-muted-foreground">{item.notes}</p>}
                 </div>
                 <span className="text-sm tabular-nums text-foreground shrink-0">
-                  {fmt((item.menu_items?.price ?? 0) * item.quantity)}
+                  {fmt((item.unit_price ?? item.menu_items?.price ?? 0) * item.quantity)}
                 </span>
               </div>
             ))}
@@ -651,7 +648,7 @@ export default function BillingPage() {
               <Button variant="outline">Cancel</Button>
             </DialogClose>
             <Button
-              disabled={markPaid.isPending}
+              disabled={markPaid.isPending || billItemsPending || billItemsError || billItems.length === 0 || !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100 || !Number.isFinite(discountAmount) || discountAmount < 0 || discountAmount > subtotal || Math.abs(discountAmount * 100 - Math.round(discountAmount * 100)) > 0.000001}
               onClick={() =>
                 billOrder &&
                 markPaid.mutate({

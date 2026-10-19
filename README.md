@@ -93,6 +93,109 @@ Hosted deployment and tightening the existing legacy direct-database permissions
 remain necessary before a production release. The mobile gateway's permission
 checks do not replace the separate legacy PostgREST/web SDK access surface.
 
+## Staff feature access
+
+Staff access checks for POS and other plan-gated tools require
+`supabase/migrations/20261017130000_staff_subscription_access.sql`. The web app
+uses `get_restaurant_subscription_access` to read a restaurant's plan, status,
+and expiry for its members. Full subscription records and billing identifiers
+remain restricted by the existing owner/platform-admin policies.
+
+## Waiter POS checkout
+
+Apply `20261017140000_atomic_pos_checkout.sql` and
+`20261017150000_staff_order_workflow.sql` after the staff-access migration.
+POS uses `pos_checkout` to save the order, items, payment allocations, and cash
+drawer movement in one transaction. Retrying an identical checkout request uses
+the same request key, preventing duplicate orders and cash entries. Prices come
+from the menu and are saved on each order item; receipts use those saved prices.
+Cash, card, mobile, mixed split payments, zero tax, and pay-later are supported.
+Payment methods record tender; they do not charge an external payment gateway.
+
+Kitchen preparation and waiter serving use `staff_set_order_status` with role,
+tenant, branch, and transition checks. Restaurant owners, admins, and managers
+collect pay-later bills using `pos_settle_order`; completed orders remain in
+waiter history. These RPCs do not grant broad direct order-update permissions.
+
+Run the complete local flow with:
+
+```sh
+npx playwright test tests/waiter-pos-flow.spec.ts --workers=1
+```
+
+The suite requires local Supabase and the app at `http://127.0.0.1:8080`. It creates
+temporary restaurant/staff fixtures and removes them afterward. Receipt HTML is
+verified without sending jobs to a physical printer.
+
+## Kitchen operations
+
+Apply `20261017160000_kitchen_operations.sql` after the POS/staff workflow
+migrations. The kitchen workspace at `/kitchen` includes Queue, Availability,
+History, and Reports. Kitchen-only staff retain their dedicated navigation;
+restaurant admins keep their normal admin navigation.
+
+Starting cooking records a permanent start time and the longest item preparation
+time (15 minutes when none is configured, capped at 240). The countdown uses a
+saved deadline, so payment, messages, refreshes, and other order edits cannot
+restart it. Kitchen staff can set remaining time, see overdue tickets, and receive
+an overdue toast/sound once per deadline while the panel is open. Muting kitchen
+sounds keeps visual alerts. These are in-app alerts, not background push alerts.
+
+Availability switches change only `menu_items.is_available`, with server-side
+restaurant/branch/role checks. Existing tickets remain intact. New checkout rejects
+unavailable dishes; open menu/POS screens refresh availability at least every ten
+seconds, with realtime invalidation on POS when available.
+
+**Message waiter** opens a per-order thread. The five-minute shortcut extends the
+current deadline (or starts from now if overdue) and sends an update together.
+Custom messages and an unavailable-item template are also supported. Waiters see
+updates on their order cards and can read the thread; kitchen staff, managers,
+admins, and owners can send. Message reads respect restaurant/branch membership;
+private assignment tables stay private and direct message writes are denied.
+
+History shows ready/served/completed tickets over the last 24 hours, 7 days, or
+30 days with pagination and ticket reprinting. Reports aggregate cooking time,
+on-time percentage, delayed tickets, average delay, and daily totals. They compare
+actual preparation with the original target, even if the ETA was later extended.
+Older tickets without recorded timestamps show untracked timing and are excluded
+from timing averages. Report ranges are rolling; daily groups use UTC.
+
+Local verification:
+
+```sh
+npx playwright test tests/kitchen-operations.spec.ts --workers=1
+npm test
+```
+
+## App download page
+
+The public `/download` page is linked from the platform navigation and footer.
+Platform administrators manage it at `/platform/apps`: edit page copy, set Android,
+iOS, Windows, and macOS availability, configure Google Play/App Store/TestFlight/
+Microsoft Store links, and enter versions, requirements, dates, and release notes.
+Direct uploads support Android `.apk`, Windows `.exe`/`.msi`/`.zip`, and macOS
+`.dmg`/`.pkg`/`.zip` files up to 50 MB. External HTTPS links support larger installers.
+
+Apply `supabase/migrations/20261017100000_platform_app_downloads.sql`, followed by
+`supabase/migrations/20261017110000_desktop_app_downloads.sql`, before using the page
+on a hosted database. They create the public download configuration and
+the `platform-apps` Storage bucket; only platform administrators can change the
+configuration or upload installers. It also fixes the legacy storage-policy
+lookup that otherwise blocked installer uploads with a floor-plan permission error.
+
+All four platforms start as **Coming soon**. Upload a real app build or add its store
+link, choose **Available now**, and save changes to publish the download button.
+Uploads are stored immediately; the page changes only when its settings are saved.
+The editor detects conflicting saves from another tab. There is no app binary
+bundled with the website.
+
+Local regression checks:
+
+```sh
+npm test
+npx playwright test tests/app-downloads.spec.ts --workers=1
+```
+
 ## Restaurant creation regression tests
 
 With local Supabase and the development server running:

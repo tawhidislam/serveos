@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { usePlan } from '@/hooks/usePlan';
 import { useActiveAddonFeatureKeys } from '@/hooks/useAddons';
+import { useAuth } from '@/hooks/useAuth';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import type { PlanLimits } from '@/lib/plans';
 
 interface FeatureGateProps {
@@ -90,9 +92,12 @@ export function clearPendingFeatureRedirect() {
  *   to open so the app can return them to it once their plan upgrades.
  */
 export default function FeatureGate({ feature, children, featureName }: FeatureGateProps) {
-  const { data, isLoading } = usePlan();
+  const { data, isLoading, isError, refetch } = usePlan();
   const { data: subscriptionStatus } = useSubscriptionStatus();
   const addonFeatures = useActiveAddonFeatureKeys();
+  const { hasAnyRole } = useAuth();
+  const { isPlatformAdmin } = usePlatformAdmin();
+  const canManageSubscription = hasAnyRole(['owner', 'admin', 'manager']) || isPlatformAdmin;
   const location = useLocation();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -100,14 +105,26 @@ export default function FeatureGate({ feature, children, featureName }: FeatureG
   const value = data?.limits[feature];
   const planAllowed = typeof value === 'boolean' ? value : true;
   const addonAllowed = addonFeatures.has(feature as string);
-  const allowed = !!data && (planAllowed || addonAllowed);
+  const allowed = !!data?.isActive && !subscriptionStatus?.isExpired && (planAllowed || addonAllowed);
 
   // Auto-open the popup whenever the user lands on a locked page.
   useEffect(() => {
-    if (!isLoading && data && !allowed) {
+    if (!isLoading && data && !allowed && canManageSubscription) {
       setDialogOpen(true);
     }
-  }, [isLoading, data, allowed]);
+  }, [isLoading, data, allowed, canManageSubscription]);
+
+  if (isError) {
+    return (
+      <div className="min-h-[40vh] flex items-center justify-center p-6">
+        <Card role="alert" className="max-w-md w-full p-8 text-center space-y-4">
+          <h2 className="text-xl font-bold">Could not check feature access</h2>
+          <p className="text-sm text-muted-foreground">We could not load your restaurant’s subscription. Try again to check access to {featureName?.toLowerCase() ?? 'this feature'}.</p>
+          <Button onClick={() => refetch()}>Try again</Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -117,9 +134,24 @@ export default function FeatureGate({ feature, children, featureName }: FeatureG
     );
   }
 
-  if (subscriptionStatus?.isExpired && location.pathname.startsWith('/admin/')) return <Navigate to="/admin/subscription/expired" replace />;
+  if (subscriptionStatus?.isExpired && location.pathname.startsWith('/admin/') && canManageSubscription) return <Navigate to="/admin/subscription/expired" replace />;
 
   if (allowed) return <>{children}</>;
+
+  if (!canManageSubscription) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center space-y-4">
+          <Lock className="h-8 w-8 text-primary mx-auto" />
+          <h2 className="text-xl font-bold">{subscriptionStatus?.isExpired ? 'Restaurant subscription expired' : `${featureName ?? 'This feature'} is locked`}</h2>
+          <p className="text-sm text-muted-foreground">{subscriptionStatus?.isExpired
+            ? 'Ask your restaurant owner or manager to renew the subscription to restore access.'
+            : 'Ask your restaurant owner or manager to check the plan and subscription status to enable this feature.'}</p>
+          <Button variant="outline" onClick={() => navigate(-1)}>Go back</Button>
+        </Card>
+      </div>
+    );
+  }
 
   const targetPath = location.pathname + location.search;
   const goUpgrade = () => {

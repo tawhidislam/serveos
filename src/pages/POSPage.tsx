@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format as dateFmt } from 'date-fns';
@@ -23,6 +23,8 @@ import {
   Printer, History, RotateCcw, Clock,
 } from 'lucide-react';
 import InvoiceReceipt, { type InvoiceData } from '@/components/InvoiceReceipt';
+import { escapeReceiptText, posCheckoutResultSchema, posInvoice, readPaymentAllocations, splitPaymentAmounts, type PaymentAllocation } from '@/lib/pos-checkout';
+import type { Json } from '@/integrations/supabase/types';
 
 type PaymentMethod = 'cash' | 'card' | 'mobile' | 'pay_later';
 type CartItem = {
@@ -64,13 +66,14 @@ export default function POSPage() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem('pos_auto_print') === 'true');
-  const [taxRate, setTaxRate] = useState(10);
+  const [taxRate, setTaxRate] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
 
   // Split bill state
   const [splitCount, setSplitCount] = useState(2);
-  const [splitPayments, setSplitPayments] = useState<{ method: PaymentMethod; amount: number }[]>([]);
+  const [splitPayments, setSplitPayments] = useState<PaymentAllocation[]>([]);
+  const checkoutRequest = useRef<{ fingerprint: string; key: string } | null>(null);
 
   // Cash drawer state
   const [drawerAction, setDrawerAction] = useState<'open' | 'close' | 'cash_in' | 'cash_out'>('open');
@@ -88,9 +91,16 @@ export default function POSPage() {
     },
   });
 
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase.channel(`pos-availability-${restaurantId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items', filter: `restaurant_id=eq.${restaurantId}` }, () => { void qc.invalidateQueries({ queryKey: ['pos_menu_items', restaurantId] }); }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [restaurantId, qc]);
+
   const { data: menuItems = [] } = useQuery({
     queryKey: ['pos_menu_items', restaurantId ?? 'none'],
     enabled: !!restaurantId,
+    refetchInterval: 10000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('menu_items')
@@ -146,7 +156,7 @@ export default function POSPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, created_at, paid_at, payment_method, total_amount, table_id, tax_rate, discount_amount, status, order_items(quantity, notes, menu_items(name, price))')
+        .select('id, created_at, paid_at, payment_method, payment_splits, total_amount, table_id, tax_rate, discount_amount, status, order_items(quantity, unit_price, notes, menu_items(name, price))')
         .eq('restaurant_id', restaurantId!)
         .not('paid_at', 'is', null)
         .order('created_at', { ascending: false })
@@ -158,7 +168,7 @@ export default function POSPage() {
 
   // Set tax from settings
   useEffect(() => {
-    if (settings?.tax_percentage) setTaxRate(settings.tax_percentage);
+    if (settings?.tax_percentage != null) setTaxRate(Number(settings.tax_percentage));
   }, [settings?.tax_percentage]);
 
   // Save auto-print preference
@@ -168,74 +178,30 @@ export default function POSPage() {
 
   // Mutations
   const createOrder = useMutation({
-    mutationFn: async ({ payment, tax, discount }: { payment: PaymentMethod; tax: number; discount: number }) => {
+    mutationFn: async ({ payment, tax, discount, payments }: { payment: PaymentMethod | 'split'; tax: number; discount: number; payments?: PaymentAllocation[] }) => {
       if (!user) throw new Error('Not authenticated');
-      const isPayLater = payment === 'pay_later';
-      const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-      const taxAmt = subtotal * (tax / 100);
-      const total = subtotal + taxAmt - discount;
-
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          restaurant_id: restaurantId,
-          table_id: selectedTable,
-          total_amount: Math.max(0, total),
-          tax_rate: tax,
-          discount_amount: discount,
-          payment_method: isPayLater ? null : payment,
-          status: 'pending',
-          paid_at: isPayLater ? null : new Date().toISOString(),
-          notes: orderNotes || null,
-        })
-        .select()
-        .single();
+      if (!restaurantId || !cart.length) throw new Error('Add items to the cart first.');
+      if (!settings) throw new Error('Wait for restaurant settings to load before checkout.');
+      const payload = {
+        items: cart.map(item => ({ menu_item_id: item.menuItemId, quantity: item.quantity, notes: item.notes || null, expected_price: item.price })),
+        table_id: selectedTable, tax_rate: tax, discount_amount: discount, payment, notes: orderNotes || null,
+        ...(payments ? { payments } : {}),
+      };
+      const fingerprint = JSON.stringify({ restaurantId, payload });
+      if (checkoutRequest.current?.fingerprint !== fingerprint) checkoutRequest.current = { fingerprint, key: crypto.randomUUID() };
+      const { data, error } = await supabase.rpc('pos_checkout', {
+        _restaurant: restaurantId, _request_key: checkoutRequest.current!.key, _payload: payload as unknown as Json,
+      });
       if (error) throw error;
-
-      const items = cart.map(i => ({
-        order_id: order.id,
-        menu_item_id: i.menuItemId,
-        restaurant_id: restaurantId,
-        quantity: i.quantity,
-        notes: i.notes || null,
-        status: 'pending',
-      }));
-      const { error: itemsErr } = await supabase.from('order_items').insert(items);
-      if (itemsErr) throw itemsErr;
-
-      // Update cash drawer if cash payment (not pay_later)
-      if (!isPayLater && payment === 'cash' && activeDrawer) {
-        await supabase
-          .from('cash_drawer_sessions')
-          .update({ cash_in: (activeDrawer as any).cash_in + total })
-          .eq('id', (activeDrawer as any).id);
-      }
-
-      return { ...order, _isPayLater: isPayLater };
+      return posCheckoutResultSchema.parse(data);
     },
-    onSuccess: (order, variables) => {
-      const isPayLater = (order as any)._isPayLater;
+    onSuccess: result => {
+      const isPayLater = !result.order.paid_at;
 
       if (!isPayLater) {
         // Build invoice data before clearing cart
-        const sub = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-        const taxAmt = sub * (variables.tax / 100);
-        const total = Math.max(0, sub + taxAmt - variables.discount);
         const tableLabel = selectedTable ? tables.find(t => t.id === selectedTable)?.label : null;
-        const inv: InvoiceData = {
-          orderId: order.id,
-          tableLabel,
-          createdAt: order.created_at,
-          paidAt: order.paid_at,
-          paymentMethod: order.payment_method,
-          items: cart.map(i => ({ name: i.name, quantity: i.quantity, unitPrice: i.price, notes: i.notes || null })),
-          subtotal: sub,
-          taxRate: variables.tax,
-          taxAmount: taxAmt,
-          discountAmount: variables.discount,
-          grandTotal: total,
-        };
+        const inv = posInvoice(result, tableLabel);
         setInvoiceData(inv);
         setShowInvoice(true);
 
@@ -252,9 +218,11 @@ export default function POSPage() {
       setOrderNotes('');
       setDiscountAmount(0);
       setShowCheckout(false);
+      setShowSplitBill(false); setSplitPayments([]); setSplitCount(2);
+      checkoutRequest.current = null;
       toast.success(isPayLater ? 'Order sent to kitchen! Payment pending.' : 'Order placed & paid!');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => { qc.invalidateQueries({ queryKey: ['pos_menu_items'] }); toast.error(e.message); },
   });
 
   // Build print HTML and trigger print from InvoiceData
@@ -264,19 +232,20 @@ export default function POSPage() {
     const orderDate = dateFmt(new Date(inv.createdAt), 'MMM d, yyyy');
     const orderTime = dateFmt(new Date(inv.createdAt), 'h:mm a');
     const itemsHTML = inv.items.map(item => `
-      <div class="row"><span>${item.quantity}× ${item.name}</span><span>${fmt(item.unitPrice * item.quantity)}</span></div>
-      ${item.notes ? `<div class="notes">⚠ ${item.notes}</div>` : ''}
+      <div class="row"><span>${item.quantity}× ${escapeReceiptText(item.name)}</span><span>${fmt(item.unitPrice * item.quantity)}</span></div>
+      ${item.notes ? `<div class="notes">⚠ ${escapeReceiptText(item.notes)}</div>` : ''}
     `).join('');
     const html = `<!DOCTYPE html><html><head><title>${invNum}</title>
       <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',Courier,monospace;font-size:12px;padding:20px;max-width:320px;margin:0 auto;color:#000;background:#fff}.header{text-align:center;margin-bottom:8px}.header h1{font-size:18px;font-weight:bold;margin-bottom:4px}.header p{font-size:10px;color:#666;margin-bottom:2px}.divider{border:none;border-top:1px dashed #333;margin:10px 0}.row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}.row.light{color:#666;font-size:11px}.row.red{color:#c00}.row.total{font-size:16px;font-weight:bold;padding:6px 0}.notes{font-size:10px;color:#888;padding-left:16px;padding-bottom:2px}.footer{text-align:center;margin-top:16px;font-size:10px;color:#888}.footer p{margin-bottom:2px}@media print{body{padding:8px}@page{margin:10mm;size:80mm auto}}</style>
     </head><body>
-      <div class="header"><h1>${rName}</h1><p>${invNum}</p><p>${orderDate} · ${orderTime}</p>${inv.tableLabel ? `<p>Table: ${inv.tableLabel}</p>` : ''}</div>
+      <div class="header"><h1>${escapeReceiptText(rName)}</h1><p>${invNum}</p><p>${orderDate} · ${orderTime}</p>${inv.tableLabel ? `<p>Table: ${escapeReceiptText(inv.tableLabel)}</p>` : ''}</div>
       <hr class="divider"/>${itemsHTML}<hr class="divider"/>
       <div class="row light"><span>Subtotal</span><span>${fmt(inv.subtotal)}</span></div>
       <div class="row light"><span>Tax (${inv.taxRate}%)</span><span>+${fmt(inv.taxAmount)}</span></div>
       ${inv.discountAmount > 0 ? `<div class="row red"><span>Discount</span><span>-${fmt(inv.discountAmount)}</span></div>` : ''}
       <hr class="divider"/><div class="row total"><span>TOTAL</span><span>${fmt(inv.grandTotal)}</span></div>
       ${inv.paymentMethod ? `<div class="row light"><span>Paid via</span><span style="text-transform:capitalize">${inv.paymentMethod}</span></div>` : ''}
+      ${(inv.paymentSplits?.length ?? 0) > 1 ? inv.paymentSplits!.map((part, index) => `<div class="row light"><span>Split ${index + 1} (${part.method})</span><span>${fmt(part.amount)}</span></div>`).join('') : ''}
       <hr class="divider"/><div class="footer"><p>Thank you for dining with us!</p><p>#${inv.orderId.slice(0, 8)}</p></div>
     </body></html>`;
 
@@ -289,14 +258,14 @@ export default function POSPage() {
   };
 
   // Reprint receipt for a past order
-  const reprintReceipt = (order: any) => {
-    const orderItems = (order.order_items || []).map((oi: any) => ({
+  const reprintReceipt = (order: typeof recentOrders[number]) => {
+    const orderItems = (order.order_items || []).map(oi => ({
       name: oi.menu_items?.name || 'Unknown',
       quantity: oi.quantity,
-      unitPrice: Number(oi.menu_items?.price || 0),
+      unitPrice: Number(oi.unit_price ?? oi.menu_items?.price ?? 0),
       notes: oi.notes || null,
     }));
-    const sub = orderItems.reduce((s: number, i: any) => s + i.unitPrice * i.quantity, 0);
+    const sub = orderItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
     const taxAmt = sub * ((order.tax_rate || 0) / 100);
     const tableLabel = order.table_id ? tables.find(t => t.id === order.table_id)?.label : null;
     const inv: InvoiceData = {
@@ -305,6 +274,7 @@ export default function POSPage() {
       createdAt: order.created_at,
       paidAt: order.paid_at,
       paymentMethod: order.payment_method,
+      paymentSplits: readPaymentAllocations(order.payment_splits),
       items: orderItems,
       subtotal: sub,
       taxRate: order.tax_rate || 0,
@@ -335,20 +305,20 @@ export default function POSPage() {
             closing_balance: drawerAmount,
             status: 'closed',
             closed_at: new Date().toISOString(),
-            notes: drawerNotes || (activeDrawer as any).notes,
+            notes: drawerNotes || activeDrawer.notes,
           })
-          .eq('id', (activeDrawer as any).id);
+          .eq('id', activeDrawer.id);
         if (error) throw error;
       } else if (activeDrawer) {
         const field = drawerAction === 'cash_in' ? 'cash_in' : 'cash_out';
-        const current = Number((activeDrawer as any)[field]) || 0;
+        const current = Number(activeDrawer[field]) || 0;
         const updateData = field === 'cash_in'
           ? { cash_in: current + drawerAmount }
           : { cash_out: current + drawerAmount };
         const { error } = await supabase
           .from('cash_drawer_sessions')
           .update(updateData)
-          .eq('id', (activeDrawer as any).id);
+          .eq('id', activeDrawer.id);
         if (error) throw error;
       }
     },
@@ -359,7 +329,7 @@ export default function POSPage() {
       setDrawerNotes('');
       toast.success(drawerAction === 'open' ? 'Drawer opened' : drawerAction === 'close' ? 'Drawer closed' : 'Drawer updated');
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   // Cart helpers
@@ -387,9 +357,10 @@ export default function POSPage() {
 
   // Calculations
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const taxAmount = subtotal * (taxRate / 100);
-  const grandTotal = Math.max(0, subtotal + taxAmount - discountAmount);
+  const taxAmount = Math.round(Math.round(subtotal * 100) * taxRate / 100) / 100;
+  const grandTotal = Math.max(0, Math.round((subtotal + taxAmount - discountAmount) * 100) / 100);
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
+  const checkoutValid = cart.length > 0 && cart.every(item => item.quantity <= 100) && Number.isFinite(taxRate) && taxRate >= 0 && taxRate <= 100 && Number.isFinite(discountAmount) && discountAmount >= 0 && discountAmount <= subtotal && Math.round(discountAmount * 100) / 100 === discountAmount;
 
   // Filtering
   const filteredItems = useMemo(() => {
@@ -402,7 +373,7 @@ export default function POSPage() {
     return items;
   }, [menuItems, selectedCategory, searchQuery]);
 
-  const splitAmount = splitCount > 0 ? grandTotal / splitCount : grandTotal;
+  const splitAmount = splitPaymentAmounts(grandTotal, splitCount)[splitPayments.length] ?? 0;
 
   // Pick layout only once roles are resolved; default to AdminLayout while
   // loading so admins/owners don't briefly see the waiter shell. ProtectedRoute
@@ -456,6 +427,7 @@ export default function POSPage() {
                 return (
                   <motion.button
                     key={item.id}
+                    aria-label={`Add ${item.name} to cart`}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => addToCart(item)}
                     className={`relative p-3 rounded-xl text-left transition-all ${
@@ -538,16 +510,16 @@ export default function POSPage() {
                       <p className="text-[11px] text-muted-foreground tabular-nums">{fmt(item.price)} each</p>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => updateQty(item.menuItemId, -1)} className="h-6 w-6 rounded bg-background flex items-center justify-center hover:bg-accent">
+                      <button aria-label={`Decrease ${item.name} quantity`} onClick={() => updateQty(item.menuItemId, -1)} className="h-6 w-6 rounded bg-background flex items-center justify-center hover:bg-accent">
                         <Minus className="h-3 w-3" strokeWidth={2} />
                       </button>
                       <span className="w-6 text-center text-xs font-bold tabular-nums">{item.quantity}</span>
-                      <button onClick={() => updateQty(item.menuItemId, 1)} className="h-6 w-6 rounded bg-background flex items-center justify-center hover:bg-accent">
+                      <button aria-label={`Increase ${item.name} quantity`} disabled={item.quantity >= 100} onClick={() => updateQty(item.menuItemId, 1)} className="h-6 w-6 rounded bg-background flex items-center justify-center hover:bg-accent">
                         <Plus className="h-3 w-3" strokeWidth={2} />
                       </button>
                     </div>
                     <span className="text-xs font-bold tabular-nums w-16 text-right">{fmt(item.price * item.quantity)}</span>
-                    <button onClick={() => removeFromCart(item.menuItemId)} className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive">
+                    <button aria-label={`Remove ${item.name}`} onClick={() => removeFromCart(item.menuItemId)} className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive">
                       <X className="h-3 w-3" strokeWidth={2} />
                     </button>
                   </motion.div>
@@ -590,6 +562,7 @@ export default function POSPage() {
                   variant="outline"
                   size="sm"
                   className="text-xs gap-1"
+                  disabled={!settings}
                   onClick={() => setShowSplitBill(true)}
                 >
                   <SplitSquareHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -598,6 +571,7 @@ export default function POSPage() {
                 <Button
                   size="sm"
                   className="text-xs gap-1"
+                  disabled={!settings}
                   onClick={() => setShowCheckout(true)}
                 >
                   <Receipt className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -652,6 +626,7 @@ export default function POSPage() {
       {/* Mobile Cart FAB */}
       {isMobile && !showMobileCart && (
         <button
+          aria-label="View cart"
           onClick={() => setShowMobileCart(true)}
           className="fixed bottom-20 right-4 z-50 h-14 min-w-14 px-4 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center gap-2 md:bottom-6 md:right-6"
         >
@@ -666,7 +641,7 @@ export default function POSPage() {
       )}
 
       {/* ─── Checkout Dialog ────────────────────────── */}
-      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+      <Dialog open={showCheckout} onOpenChange={open => { if (!createOrder.isPending) setShowCheckout(open); }}>
         <DialogContent className="max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -698,7 +673,7 @@ export default function POSPage() {
               <div className="flex items-center gap-1.5 flex-1">
                 <Percent className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">Tax %</span>
-                <Input type="number" min={0} max={100} value={taxRate} onChange={e => setTaxRate(Number(e.target.value) || 0)} className="h-8 w-20 text-right" />
+                <Input aria-label="Tax percentage" disabled={createOrder.isPending} type="number" min={0} max={100} value={taxRate} onChange={e => setTaxRate(Number(e.target.value) || 0)} className="h-8 w-20 text-right" />
               </div>
               <span className="text-sm tabular-nums">+{fmt(taxAmount)}</span>
             </div>
@@ -706,7 +681,7 @@ export default function POSPage() {
               <div className="flex items-center gap-1.5 flex-1">
                 <Tag className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
                 <span className="text-sm text-muted-foreground">Discount</span>
-                <Input type="number" min={0} value={discountAmount} onChange={e => setDiscountAmount(Number(e.target.value) || 0)} className="h-8 w-24 text-right" />
+                <Input aria-label="Discount amount" disabled={createOrder.isPending} type="number" min={0} max={subtotal} step="0.01" value={discountAmount} onChange={e => setDiscountAmount(Number(e.target.value) || 0)} className="h-8 w-24 text-right" />
               </div>
               {discountAmount > 0 && <span className="text-sm tabular-nums text-destructive">-{fmt(discountAmount)}</span>}
             </div>
@@ -717,6 +692,7 @@ export default function POSPage() {
           </div>
 
           {/* Payment Method */}
+          {!checkoutValid && <p role="alert" className="text-sm text-destructive">Use quantities from 1 to 100, tax from 0 to 100%, and a discount no greater than the subtotal.</p>}
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Payment Method</p>
             <div className="grid grid-cols-4 gap-2">
@@ -726,6 +702,7 @@ export default function POSPage() {
                 return (
                   <button
                     key={pm.key}
+                    disabled={createOrder.isPending}
                     onClick={() => setSelectedPayment(pm.key)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all ${
                       active ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80 bg-card'
@@ -749,10 +726,10 @@ export default function POSPage() {
 
           <DialogFooter className="gap-2">
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button disabled={createOrder.isPending} variant="outline">Cancel</Button>
             </DialogClose>
             <Button
-              disabled={createOrder.isPending}
+              disabled={createOrder.isPending || !checkoutValid}
               onClick={() => createOrder.mutate({ payment: selectedPayment, tax: taxRate, discount: discountAmount })}
               className="gap-1"
             >
@@ -767,7 +744,7 @@ export default function POSPage() {
       </Dialog>
 
       {/* ─── Split Bill Dialog ──────────────────────── */}
-      <Dialog open={showSplitBill} onOpenChange={setShowSplitBill}>
+      <Dialog open={showSplitBill} onOpenChange={open => { if (!createOrder.isPending) { setShowSplitBill(open); if (!open) { setSplitPayments([]); setSplitCount(2); } } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -784,19 +761,19 @@ export default function POSPage() {
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Split Equally</p>
               <div className="flex items-center gap-3">
-                <button onClick={() => setSplitCount(Math.max(2, splitCount - 1))} className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80">
+                <button aria-label="Fewer split payments" disabled={splitPayments.length > 0 || createOrder.isPending} onClick={() => setSplitCount(Math.max(2, splitCount - 1))} className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80">
                   <Minus className="h-4 w-4" strokeWidth={2} />
                 </button>
                 <div className="text-center flex-1">
                   <p className="text-2xl font-bold tabular-nums">{splitCount}</p>
                   <p className="text-xs text-muted-foreground">people</p>
                 </div>
-                <button onClick={() => setSplitCount(splitCount + 1)} className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80">
+                <button aria-label="More split payments" disabled={splitPayments.length > 0 || createOrder.isPending || splitCount >= 20} onClick={() => setSplitCount(splitCount + 1)} className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-secondary/80">
                   <Plus className="h-4 w-4" strokeWidth={2} />
                 </button>
               </div>
               <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 text-center">
-                <p className="text-xs text-muted-foreground">Each person pays</p>
+                <p className="text-xs text-muted-foreground">Next payment</p>
                 <p className="text-xl font-bold tabular-nums text-primary">{fmt(splitAmount)}</p>
               </div>
             </div>
@@ -805,25 +782,22 @@ export default function POSPage() {
             <div>
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Pay Split #{(splitPayments.length + 1)}</p>
               <div className="grid grid-cols-3 gap-2">
-                {paymentMethods.map(pm => {
+                {paymentMethods.filter(pm => pm.key !== 'pay_later').map(pm => {
                   const Icon = pm.icon;
                   return (
                     <Button
                       key={pm.key}
                       variant="outline"
                       size="sm"
+                      disabled={createOrder.isPending || !checkoutValid || grandTotal <= 0}
                       className="flex-col gap-1 h-auto py-2 text-xs"
                       onClick={() => {
-                        const newPayments = [...splitPayments, { method: pm.key, amount: splitAmount }];
-                        setSplitPayments(newPayments);
+                        const newPayments: PaymentAllocation[] = [...splitPayments, { method: pm.key as PaymentAllocation['method'], amount: splitAmount }];
                         if (newPayments.length >= splitCount) {
-                          // All splits paid - create order
-                          createOrder.mutate({ payment: pm.key, tax: taxRate, discount: discountAmount });
-                          setShowSplitBill(false);
-                          setSplitPayments([]);
-                          setSplitCount(2);
+                          createOrder.mutate({ payment: 'split', payments: newPayments, tax: taxRate, discount: discountAmount });
                         } else {
-                          toast.success(`Split ${newPayments.length}/${splitCount} paid via ${pm.label}`);
+                          setSplitPayments(newPayments);
+                          toast.success(`Split ${newPayments.length}/${splitCount} recorded via ${pm.label}`);
                         }
                       }}
                     >
@@ -851,7 +825,7 @@ export default function POSPage() {
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline" onClick={() => { setSplitPayments([]); setSplitCount(2); }}>Cancel</Button>
+              <Button disabled={createOrder.isPending} variant="outline" onClick={() => { setSplitPayments([]); setSplitCount(2); }}>Cancel</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
@@ -875,20 +849,20 @@ export default function POSPage() {
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="p-2 rounded-lg bg-success/5 border border-success/10">
                   <p className="text-xs text-muted-foreground">Opening</p>
-                  <p className="text-sm font-bold tabular-nums text-success">{fmt(Number((activeDrawer as any).opening_balance))}</p>
+                  <p className="text-sm font-bold tabular-nums text-success">{fmt(Number(activeDrawer.opening_balance))}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-primary/5 border border-primary/10">
                   <p className="text-xs text-muted-foreground">Cash In</p>
-                  <p className="text-sm font-bold tabular-nums text-primary">{fmt(Number((activeDrawer as any).cash_in))}</p>
+                  <p className="text-sm font-bold tabular-nums text-primary">{fmt(Number(activeDrawer.cash_in))}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/10">
                   <p className="text-xs text-muted-foreground">Cash Out</p>
-                  <p className="text-sm font-bold tabular-nums text-destructive">{fmt(Number((activeDrawer as any).cash_out))}</p>
+                  <p className="text-sm font-bold tabular-nums text-destructive">{fmt(Number(activeDrawer.cash_out))}</p>
                 </div>
                 <div className="p-2 rounded-lg bg-secondary">
                   <p className="text-xs text-muted-foreground">Expected</p>
                   <p className="text-sm font-bold tabular-nums">
-                    {fmt(Number((activeDrawer as any).opening_balance) + Number((activeDrawer as any).cash_in) - Number((activeDrawer as any).cash_out))}
+                    {fmt(Number(activeDrawer.opening_balance) + Number(activeDrawer.cash_in) - Number(activeDrawer.cash_out))}
                   </p>
                 </div>
               </div>
@@ -938,7 +912,7 @@ export default function POSPage() {
               <Button variant="outline">Cancel</Button>
             </DialogClose>
             <Button
-              disabled={drawerMutation.isPending}
+              disabled={drawerMutation.isPending || !Number.isFinite(drawerAmount) || drawerAmount < 0}
               onClick={() => drawerMutation.mutate()}
               className="gap-1"
             >
@@ -964,9 +938,9 @@ export default function POSPage() {
             {recentOrders.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No recent orders</p>
             ) : (
-              recentOrders.map((order: any) => {
+              recentOrders.map(order => {
                 const tbl = order.table_id ? tables.find(t => t.id === order.table_id)?.label : 'Takeaway';
-                const itemCount = (order.order_items || []).reduce((s: number, oi: any) => s + oi.quantity, 0);
+                const itemCount = (order.order_items || []).reduce((s, oi) => s + oi.quantity, 0);
                 return (
                   <div
                     key={order.id}
@@ -1003,13 +977,13 @@ export default function POSPage() {
                         size="sm"
                         className="h-7 text-[11px] gap-1"
                         onClick={() => {
-                          const orderItems = (order.order_items || []).map((oi: any) => ({
+                          const orderItems = (order.order_items || []).map(oi => ({
                             name: oi.menu_items?.name || 'Unknown',
                             quantity: oi.quantity,
-                            unitPrice: Number(oi.menu_items?.price || 0),
+                            unitPrice: Number(oi.unit_price ?? oi.menu_items?.price ?? 0),
                             notes: oi.notes || null,
                           }));
-                          const sub = orderItems.reduce((s: number, i: any) => s + i.unitPrice * i.quantity, 0);
+                          const sub = orderItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
                           const taxAmt = sub * ((order.tax_rate || 0) / 100);
                           const tableLabel = order.table_id ? tables.find(t => t.id === order.table_id)?.label : null;
                           const inv: InvoiceData = {
@@ -1018,6 +992,7 @@ export default function POSPage() {
                             createdAt: order.created_at,
                             paidAt: order.paid_at,
                             paymentMethod: order.payment_method,
+                            paymentSplits: readPaymentAllocations(order.payment_splits),
                             items: orderItems,
                             subtotal: sub,
                             taxRate: order.tax_rate || 0,

@@ -16,7 +16,7 @@ export default function WaiterMobileNav() {
   if (!isMobile) return null;
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom">
+    <nav aria-label="Waiter navigation" className="fixed bottom-0 inset-x-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom">
       <div className="grid grid-cols-4 h-16">
 
         {navItems.map(item => {
@@ -26,6 +26,7 @@ export default function WaiterMobileNav() {
             <Link
               key={item.path}
               to={item.path}
+              aria-current={active ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors ${
                 active ? 'text-primary' : 'text-muted-foreground'
               }`}

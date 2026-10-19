@@ -52,6 +52,8 @@ const OwnerBranding = lazy(() => import("./pages/owner/OwnerBranding"));
 const OwnerTheme = lazy(() => import("./pages/owner/OwnerTheme"));
 const OwnerDomain = lazy(() => import("./pages/owner/OwnerDomain"));
 const OwnerOnboarding = lazy(() => import("./pages/owner/OwnerOnboarding"));
+const MarketingDownload = lazy(() => import("./pages/marketing/MarketingDownload"));
+const PlatformAppDownloads = lazy(() => import("./pages/platform/PlatformAppDownloads"));
 const PlatformOverview = lazy(() => import("./pages/platform/PlatformOverview"));
 const PlatformLogin = lazy(() => import("./pages/platform/PlatformLogin"));
 const PlatformTenants = lazy(() => import("./pages/platform/PlatformTenants"));
@@ -164,6 +166,8 @@ const App = () => (
               <Route path="/features" element={<MarketingFeatures />} />
               <Route path="/pricing" element={<MarketingPricing />} />
               <Route path="/demo" element={<MarketingDemo />} />
+              <Route path="/download" element={<MarketingDownload />} />
+              <Route path="/apps" element={<Navigate to="/download" replace />} />
               <Route path="/about" element={<CustomDomainGate tenant={<AboutPage />} platform={<MarketingAbout />} />} />
               <Route path="/contact" element={<CustomDomainGate tenant={<ContactPage />} platform={<MarketingContact />} />} />
               <Route path="/gallery" element={<CustomDomainGate tenant={<GalleryPage />} platform={<MarketingHome />} />} />
@@ -270,6 +274,7 @@ const App = () => (
               <Route path="/platform/audit" element={<PlatformRoute><PlatformAudit /></PlatformRoute>} />
               <Route path="/platform/users" element={<PlatformRoute><PlatformUsers /></PlatformRoute>} />
               <Route path="/platform/orders" element={<PlatformRoute><PlatformOrders /></PlatformRoute>} />
+              <Route path="/platform/apps" element={<PlatformRoute><PlatformAppDownloads /></PlatformRoute>} />
               <Route path="/platform/demo-editor" element={<PlatformRoute><PlatformDemoEditor /></PlatformRoute>} />
               <Route path="/platform/marketing-home" element={<PlatformRoute><PlatformMarketingHome /></PlatformRoute>} />
               <Route path="/platform/footer" element={<PlatformRoute><PlatformFooterEditor /></PlatformRoute>} />

@@ -12,6 +12,7 @@ const links = [
   { to: '/features', label: 'Features' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/demo', label: 'Demo' },
+  { to: '/download', label: 'Download' },
   { to: '/about', label: 'About' },
   { to: '/contact', label: 'Contact' },
 ];

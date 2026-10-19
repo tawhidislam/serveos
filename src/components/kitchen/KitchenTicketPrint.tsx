@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { format } from 'date-fns';
+import { escapeReceiptText } from '@/lib/pos-checkout';
 
 interface TicketItem {
   name: string;
@@ -33,10 +34,10 @@ function generateTicketHTML(order: TicketOrder, restaurantName?: string): string
       <tr>
         <td style="font-size:16px;font-weight:bold;padding:4px 0;vertical-align:top;width:30px;">${item.quantity}×</td>
         <td style="font-size:15px;padding:4px 0;vertical-align:top;">
-          <div style="font-weight:600;">${item.name}</div>
+          <div style="font-weight:600;">${escapeReceiptText(item.name)}</div>
           ${item.prep_time_minutes ? `<div style="font-size:11px;color:#888;">~${item.prep_time_minutes} min</div>` : ''}
-          ${item.selected_tags.length > 0 ? `<div style="font-size:12px;color:#d97706;font-weight:600;margin-top:2px;">🏷 ${item.selected_tags.join(', ')}</div>` : ''}
-          ${item.notes ? `<div style="font-size:12px;color:#d97706;margin-top:2px;">⚠ ${item.notes}</div>` : ''}
+          ${item.selected_tags.length > 0 ? `<div style="font-size:12px;color:#d97706;font-weight:600;margin-top:2px;">🏷 ${escapeReceiptText(item.selected_tags.join(', '))}</div>` : ''}
+          ${item.notes ? `<div style="font-size:12px;color:#d97706;margin-top:2px;">⚠ ${escapeReceiptText(item.notes)}</div>` : ''}
         </td>
       </tr>`
     )
@@ -110,12 +111,12 @@ function generateTicketHTML(order: TicketOrder, restaurantName?: string): string
 <body>
   <div class="ticket">
     <div class="header">
-      ${restaurantName ? `<div style="font-size:13px;font-weight:bold;margin-bottom:4px;">${restaurantName}</div>` : ''}
+      ${restaurantName ? `<div style="font-size:13px;font-weight:bold;margin-bottom:4px;">${escapeReceiptText(restaurantName)}</div>` : ''}
       <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:2px;">Kitchen Ticket</div>
       <div class="ticket-num">#${ticketNum}</div>
     </div>
     <div class="meta">
-      <span><strong>${tableLabel}</strong></span>
+      <span><strong>${escapeReceiptText(tableLabel)}</strong></span>
       <span>${time} · ${date}</span>
     </div>
     <div class="meta" style="border-bottom:none;margin-bottom:0;">
@@ -125,7 +126,7 @@ function generateTicketHTML(order: TicketOrder, restaurantName?: string): string
     <table class="items-table">
       <tbody>${itemsHTML}</tbody>
     </table>
-    ${order.notes ? `<div class="order-notes">📝 ${order.notes}</div>` : ''}
+    ${order.notes ? `<div class="order-notes">📝 ${escapeReceiptText(order.notes)}</div>` : ''}
     <div class="footer">
       Order ID: ${order.id.slice(0, 8)}<br/>
       Printed at ${format(new Date(), 'HH:mm:ss')}
@@ -141,13 +142,13 @@ export function usePrintTicket(restaurantName?: string) {
       const html = generateTicketHTML(order, restaurantName);
       const printWindow = window.open('', '_blank', 'width=350,height=600');
       if (!printWindow) return;
-      printWindow.document.write(html);
-      printWindow.document.close();
       printWindow.onload = () => {
         printWindow.focus();
         printWindow.print();
         setTimeout(() => printWindow.close(), 1000);
       };
+      printWindow.document.write(html);
+      printWindow.document.close();
     },
     [restaurantName]
   );

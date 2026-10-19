@@ -22,6 +22,8 @@ import UpgradePromptDialog from './UpgradePromptDialog';
 import PostUpgradeRedirect from './PostUpgradeRedirect';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import TenantFaviconInjector from '@/components/TenantFaviconInjector';
+import KitchenLayout from '@/components/kitchen/KitchenLayout';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -44,7 +46,17 @@ const notifColor: Record<AdminNotification['type'], string> = {
 };
 
 
-export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
+export default function AdminLayout(props: AdminLayoutProps) {
+  const { hasRole, hasAnyRole } = useAuth();
+  // Shared staff pages (including support) must not mount admin navigation,
+  // notifications, auto-print listeners, or billing prompts for kitchen staff.
+  if (hasRole('kitchen') && !hasAnyRole(['owner', 'admin', 'manager'])) {
+    return <KitchenLayout {...props} />;
+  }
+  return <AdminWorkspaceLayout {...props} />;
+}
+
+function AdminWorkspaceLayout({ children, title, subtitle }: AdminLayoutProps) {
   const today = format(new Date(), 'EEEE, MMMM d');
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useAdminNotifications();
   const { enabled: autoPrintEnabled, toggle: toggleAutoPrint } = useAdminAutoPrintToggle();

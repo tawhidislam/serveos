@@ -20,6 +20,7 @@ const loaders: Record<string, Loader> = {
   '/': () => import('@/pages/marketing/MarketingHome'),
   '/features': () => import('@/pages/marketing/MarketingFeatures'),
   '/pricing': () => import('@/pages/marketing/MarketingPricing'),
+  '/download': () => import('@/pages/marketing/MarketingDownload'),
   '/demo': () => import('@/pages/marketing/MarketingDemo'),
   '/about': () => import('@/pages/marketing/MarketingAbout'),
   '/contact': () => import('@/pages/marketing/MarketingContact'),

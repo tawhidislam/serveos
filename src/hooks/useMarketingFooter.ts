@@ -35,7 +35,7 @@ export const FOOTER_DEFAULT: Omit<MarketingFooterSettings, 'id'> = {
     { icon: 'linkedin', href: '#', label: 'LinkedIn' },
   ],
   columns: [
-    { title: 'Product', links: [{ label: 'Features', to: '/features' }, { label: 'Pricing', to: '/pricing' }, { label: 'Demo', to: '/demo' }] },
+    { title: 'Product', links: [{ label: 'Features', to: '/features' }, { label: 'Pricing', to: '/pricing' }, { label: 'Demo', to: '/demo' }, { label: 'Download app', to: '/download' }] },
     { title: 'Company', links: [{ label: 'About', to: '/about' }, { label: 'Contact', to: '/contact' }] },
     { title: 'Account', links: [{ label: 'Sign in', to: '/login' }, { label: 'Get started', to: '/signup' }] },
     { title: 'Legal', links: [

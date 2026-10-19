@@ -1969,6 +1969,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          kitchen_started_at: string | null
+          kitchen_due_at: string | null
+          kitchen_ready_at: string | null
+          kitchen_target_minutes: number | null
           branch_id: string | null
           created_at: string
           customer_id: string | null
@@ -1983,6 +1987,7 @@ export type Database = {
           order_type: string
           paid_at: string | null
           payment_method: string | null
+          payment_splits: Json
           requested_for: string | null
           restaurant_id: string | null
           status: string
@@ -1994,6 +1999,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          kitchen_started_at?: string | null
+          kitchen_due_at?: string | null
+          kitchen_ready_at?: string | null
+          kitchen_target_minutes?: number | null
           branch_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -2008,6 +2017,7 @@ export type Database = {
           order_type?: string
           paid_at?: string | null
           payment_method?: string | null
+          payment_splits?: Json
           requested_for?: string | null
           restaurant_id?: string | null
           status?: string
@@ -2019,6 +2029,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          kitchen_started_at?: string | null
+          kitchen_due_at?: string | null
+          kitchen_ready_at?: string | null
+          kitchen_target_minutes?: number | null
           branch_id?: string | null
           created_at?: string
           customer_id?: string | null
@@ -2033,6 +2047,7 @@ export type Database = {
           order_type?: string
           paid_at?: string | null
           payment_method?: string | null
+          payment_splits?: Json
           requested_for?: string | null
           restaurant_id?: string | null
           status?: string
@@ -2243,6 +2258,12 @@ export type Database = {
           id?: string
           notes?: string | null
         }
+        Relationships: []
+      }
+      platform_app_downloads: {
+        Row: { id: boolean; content: Json; updated_at: string }
+        Insert: { id?: boolean; content: Json; updated_at?: string }
+        Update: { content?: Json; updated_at?: string }
         Relationships: []
       }
       platform_settings: {
@@ -3953,6 +3974,39 @@ export type Database = {
         }
         Relationships: []
       }
+      kitchen_updates: {
+        Row: {
+          id: string
+          restaurant_id: string
+          order_id: string
+          branch_id: string | null
+          author_id: string | null
+          message: string
+          extra_minutes: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          restaurant_id: string
+          order_id: string
+          branch_id?: string | null
+          author_id?: string | null
+          message: string
+          extra_minutes?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          restaurant_id?: string
+          order_id?: string
+          branch_id?: string | null
+          author_id?: string | null
+          message?: string
+          extra_minutes?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       waiter_calls: {
         Row: {
           created_at: string
@@ -4026,6 +4080,32 @@ export type Database = {
         Returns: string
       }
       current_restaurant_id: { Args: never; Returns: string }
+      kitchen_menu: { Args: { _restaurant: string }; Returns: Json }
+      kitchen_set_availability: { Args: { _restaurant: string; _item: string; _available: boolean }; Returns: undefined }
+      kitchen_set_eta: { Args: { _restaurant: string; _order: string; _minutes: number }; Returns: undefined }
+      kitchen_send_update: { Args: { _restaurant: string; _order: string; _message: string; _extra_minutes?: number }; Returns: string }
+      kitchen_history: { Args: { _restaurant: string; _days?: number; _offset?: number }; Returns: Json }
+      kitchen_report: { Args: { _restaurant: string; _days?: number }; Returns: Json }
+      pos_checkout: {
+        Args: { _restaurant: string; _request_key: string; _payload: Json }
+        Returns: Json
+      }
+      staff_set_order_status: {
+        Args: { _restaurant: string; _order: string; _status: string; _expected_status: string }
+        Returns: Json
+      }
+      pos_settle_order: {
+        Args: { _restaurant: string; _order: string; _payment: string; _tax_rate: number; _discount: number }
+        Returns: Json
+      }
+      get_restaurant_subscription_access: {
+        Args: { _restaurant_id: string }
+        Returns: {
+          plan: string
+          status: string
+          current_period_end: string | null
+        }[]
+      }
       get_loyalty_balance: {
         Args: { _restaurant_id?: string; _user_id: string }
         Returns: number

@@ -16,9 +16,9 @@ export default function WaiterLayout({ children, title, subtitle }: WaiterLayout
   return (
     <SidebarProvider>
         <TenantFaviconInjector />
-        <div className="h-screen flex w-full bg-background">
+        <div className="h-dvh flex w-full bg-background">
         <WaiterSidebar />
-        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 h-dvh overflow-hidden">
           <header className="h-14 flex items-center justify-between border-b border-border px-3 sm:px-4 lg:px-6 bg-card/80 backdrop-blur-sm shrink-0 sticky top-0 z-20">
             <div className="flex items-center gap-3 min-w-0">
               <SidebarTrigger className="text-muted-foreground hover:text-foreground shrink-0" />
@@ -33,7 +33,7 @@ export default function WaiterLayout({ children, title, subtitle }: WaiterLayout
             </div>
             <span className="text-xs text-muted-foreground hidden md:block tabular-nums">{today}</span>
           </header>
-          <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+          <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
             {children}
           </main>
         </div>

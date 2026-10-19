@@ -221,6 +221,7 @@ export default function MenuPage() {
 
   const { data: menuItems = [] } = useQuery({
     queryKey: ['menu_items_available', activeRestaurantId],
+    refetchInterval: 10000,
     queryFn: async () => {
       let q = supabase
         .from('menu_items')

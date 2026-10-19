@@ -33,6 +33,8 @@ export async function uploadWithProgress({
   onProgress,
   signal,
 }: UploadOptions): Promise<{ path: string; publicUrl: string }> {
+  const cancelled = () => new DOMException('Upload cancelled', 'AbortError');
+  if (signal?.aborted) throw cancelled();
   // compressImage() may have re-encoded the image (e.g. to WebP). Align the
   // path extension and content type with the bytes actually being sent, so
   // callers can keep building paths/content types from the original file.
@@ -44,10 +46,18 @@ export async function uploadWithProgress({
   }
 
   const { data: sessionData } = await supabase.auth.getSession();
+  if (signal?.aborted) throw cancelled();
   const token = sessionData.session?.access_token ?? ANON_KEY;
 
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const cleanup = () => signal?.removeEventListener('abort', abort);
+    const fail = (error: Error) => { cleanup(); reject(error); };
+    const abort = () => {
+      // Reject explicitly: aborting an XHR before send() need not fire onabort.
+      fail(cancelled());
+      xhr.abort();
+    };
     xhr.open('POST', `${STORAGE_URL}/${bucket}/${encodeURI(path)}`, true);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('apikey', ANON_KEY);
@@ -61,6 +71,7 @@ export async function uploadWithProgress({
       }
     };
     xhr.onload = () => {
+      cleanup();
       if (xhr.status >= 200 && xhr.status < 300) {
         onProgress?.(100);
         resolve();
@@ -75,19 +86,20 @@ export async function uploadWithProgress({
         reject(new Error(message));
       }
     };
-    xhr.onerror = () => reject(new Error('Network error — check your connection and try again'));
-    xhr.ontimeout = () => reject(new Error('Upload timed out — please try again'));
-    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'));
+    xhr.onerror = () => fail(new Error('Network error — check your connection and try again'));
+    xhr.ontimeout = () => fail(new Error('Upload timed out — please try again'));
+    xhr.onabort = () => fail(cancelled());
 
     if (signal) {
       if (signal.aborted) {
-        xhr.abort();
+        abort();
         return;
       }
-      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+      signal.addEventListener('abort', abort, { once: true });
     }
 
-    xhr.send(file);
+    try { xhr.send(file); }
+    catch (error) { cleanup(); reject(error); }
   });
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);

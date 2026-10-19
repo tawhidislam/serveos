@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchRestaurantSubscription } from '@/lib/restaurant-subscription';
 import { useCurrentRestaurant } from '@/hooks/useCurrentRestaurant';
 import { PLAN_LIMITS, type PlanTier, type PlanLimits } from '@/lib/plans';
 import { useSubscriptionPlans, findPlanByTier, SubscriptionPlan } from '@/hooks/useSubscriptionPlans';
@@ -52,11 +52,7 @@ export function usePlan() {
       if (!restaurant) {
         return { tier: 'free', limits: PLAN_LIMITS.free, status: 'inactive', isActive: false };
       }
-      const { data } = await supabase
-        .from('subscriptions')
-        .select('plan, status, current_period_end')
-        .eq('restaurant_id', restaurant.id)
-        .maybeSingle();
+      const data = await fetchRestaurantSubscription(restaurant.id);
       const tier = (data?.plan ?? 'free') as PlanTier;
       const status = data?.status ?? 'trialing';
       const periodLapsed = tier !== 'free' && !!data?.current_period_end && Date.parse(data.current_period_end) <= Date.now();

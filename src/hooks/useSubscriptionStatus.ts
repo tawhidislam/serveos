@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchRestaurantSubscription } from '@/lib/restaurant-subscription';
 import { useCurrentRestaurant } from '@/hooks/useCurrentRestaurant';
 
 export interface SubscriptionStatusResult {
@@ -24,12 +24,7 @@ export function useSubscriptionStatus() {
     staleTime: 30_000,
     refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('plan, status, current_period_end')
-        .eq('restaurant_id', restaurant!.id)
-        .maybeSingle();
-      if (error) throw error;
+      const data = await fetchRestaurantSubscription(restaurant!.id);
 
       const plan = (data?.plan ?? 'free') as string;
       const status = (data?.status ?? 'trialing') as string;

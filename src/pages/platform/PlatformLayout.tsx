@@ -25,6 +25,7 @@ const nav = [
   { label: 'Marketing footer', to: '/platform/footer', icon: LinkIcon },
   { label: 'Marketing contact', to: '/platform/contact', icon: Mail },
   { label: 'Marketing about', to: '/platform/about', icon: Info },
+  { label: 'App downloads', to: '/platform/apps', icon: Smartphone },
   { label: 'Demo page', to: '/platform/demo-editor', icon: Sparkles },
   { label: 'Settings', to: '/platform/settings', icon: Settings },
 ];

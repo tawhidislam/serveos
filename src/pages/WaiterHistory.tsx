@@ -20,7 +20,7 @@ export default function WaiterHistory() {
         .from('orders')
         .select('*, restaurant_tables(label), order_items(id, quantity, menu_item_id, notes, status, menu_items(name))')
         .eq('restaurant_id', restaurantId!)
-        .eq('status', 'served')
+        .in('status', ['served', 'completed', 'paid'])
         .order('updated_at', { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -52,7 +52,7 @@ export default function WaiterHistory() {
                           {order.restaurant_tables?.label ?? 'Takeaway'}
                         </span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-muted/50 text-muted-foreground">
-                          Served
+                          {order.status === 'served' ? 'Served' : 'Completed'}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 mt-1">

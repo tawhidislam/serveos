@@ -7,6 +7,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog';
 import { Printer, FileText, Download } from 'lucide-react';
+import { escapeReceiptText, type PaymentAllocation } from '@/lib/pos-checkout';
 
 export type InvoiceItem = {
   name: string;
@@ -21,6 +22,7 @@ export type InvoiceData = {
   createdAt: string;
   paidAt?: string | null;
   paymentMethod?: string | null;
+  paymentSplits?: PaymentAllocation[];
   items: InvoiceItem[];
   subtotal: number;
   taxRate: number;
@@ -49,10 +51,10 @@ export default function InvoiceReceipt({ open, onOpenChange, data }: Props) {
   const buildPrintHTML = () => {
     const itemsHTML = data.items.map(item => `
       <div class="row">
-        <span>${item.quantity}× ${item.name}</span>
+        <span>${item.quantity}× ${escapeReceiptText(item.name)}</span>
         <span>${fmt(item.unitPrice * item.quantity)}</span>
       </div>
-      ${item.notes ? `<div class="notes">⚠ ${item.notes}</div>` : ''}
+      ${item.notes ? `<div class="notes">⚠ ${escapeReceiptText(item.notes)}</div>` : ''}
     `).join('');
 
     const discountHTML = data.discountAmount > 0 ? `
@@ -65,7 +67,7 @@ export default function InvoiceReceipt({ open, onOpenChange, data }: Props) {
     const paymentHTML = data.paymentMethod ? `
       <div class="row light">
         <span>Paid via</span>
-        <span style="text-transform:capitalize">${data.paymentMethod}</span>
+        <span style="text-transform:capitalize">${escapeReceiptText(data.paymentMethod)}</span>
       </div>
     ` : '';
 
@@ -102,10 +104,10 @@ export default function InvoiceReceipt({ open, onOpenChange, data }: Props) {
 </head>
 <body>
   <div class="header">
-    <h1>${restaurantName}</h1>
+    <h1>${escapeReceiptText(restaurantName)}</h1>
     <p>${invoiceNumber}</p>
     <p>${orderDate} · ${orderTime}</p>
-    ${data.tableLabel ? `<p>Table: ${data.tableLabel}</p>` : ''}
+    ${data.tableLabel ? `<p>Table: ${escapeReceiptText(data.tableLabel)}</p>` : ''}
   </div>
 
   <hr class="divider" />
@@ -132,6 +134,7 @@ export default function InvoiceReceipt({ open, onOpenChange, data }: Props) {
   </div>
 
   ${paymentHTML}
+  ${(data.paymentSplits?.length ?? 0) > 1 ? data.paymentSplits!.map((part, index) => `<div class="row light"><span>Split ${index + 1} (${escapeReceiptText(part.method)})</span><span>${fmt(part.amount)}</span></div>`).join('') : ''}
   ${paidAtHTML}
 
   <hr class="divider" />
@@ -282,10 +285,13 @@ export default function InvoiceReceipt({ open, onOpenChange, data }: Props) {
             </div>
           )}
           {data.paidAt && (
+            <>
+              {(data.paymentSplits?.length ?? 0) > 1 && data.paymentSplits!.map((part, index) => <div key={index} className="flex justify-between text-gray-500"><span>Split {index + 1} ({part.method})</span><span>{fmt(part.amount)}</span></div>)}
             <div className="flex justify-between text-gray-500">
               <span>Paid at</span>
               <span>{format(new Date(data.paidAt), 'h:mm a')}</span>
             </div>
+            </>
           )}
 
           <div className="border-t border-dashed border-gray-300" />
